@@ -1,0 +1,305 @@
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Maze runner</title>
+        <script src="raphael-min.js"></script>
+        <style media="screen">
+            h1 {
+                font-weight: 400;
+                height: 5%;
+            }
+            #canvas {
+                height: 480px;
+                margin: 0 auto;
+                text-align: left;
+                width: 640px;
+            }
+            #run {
+                font-size: 2em;
+            }
+            body {
+                background: #333;
+                color: #fff;
+                font: 300 100.1% "Helvetica Neue", Helvetica, "Arial Unicode MS", Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                text-align: center;
+            }
+        </style>
+        <script>
+            var RunnerOrientation = {
+                UP: 5,
+                RIGHT: 6,
+                DOWN: 7,
+                LEFT: 8
+            }
+
+            var Cell = function (){}
+            Cell.prototype.X = -1;
+            Cell.prototype.Y = -1;
+
+            var arr = [
+                [1,1,1,1,1,1,1,1,1,1,1],
+                [1,0,1,0,1,0,0,0,1,0,1],
+                [1,0,0,0,1,0,1,0,0,0,1],
+                [1,1,1,0,1,1,0,0,1,0,1],
+                [2,0,1,0,0,0,0,1,1,0,1],
+                [1,0,0,0,1,1,0,0,1,5,1],
+                [1,1,1,1,1,1,1,1,1,1,1]
+            ]
+
+            var blockSize = 50;
+            var leftMargin = 40
+            var topMargin = 60;
+
+            //graphical objects
+            var runner;
+            var runnerHead;
+            
+            var rCell = findStartCell(); //runner cell (current)
+            var endCell = findEndCell(); //exit
+            var paper;
+
+            window.onload = function () {
+                paper = Raphael("canvas", 640, 480);
+                redraw()
+            }
+
+            function findEndCell(){
+                return findCellByValue(2);
+            }
+
+            function findStartCell(){
+                return findCellByValue(5);
+            }
+
+            function findCellByValue(sValue){
+                var cell = new Cell();
+                for (var y=0; y<arr.length; y++){
+                    for (var x=0; x<arr[y].length; x++){
+                        if (arr[y][x] === sValue) {
+                            cell.X = x;
+                            cell.Y = y;
+                        }
+                    }
+                }
+                return cell;
+            }
+
+            function checkIfNextCellIsFree(x, y){
+                var newCell = getNextCell(x, y);
+                var newCellValue = arr[newCell.Y][newCell.X];
+
+                return newCellValue === 0 ||
+                       newCellValue === 2;
+            }
+
+            function checkIfRightCellIsFree(x, y){
+                rotateRight(x, y);
+                result = checkIfNextCellIsFree(x, y);
+                rotateLeft(x, y);
+
+                return result;
+            }
+
+            function checkIfLeftCellIsFree(x, y){
+                rotateLeft(x, y);
+                result = checkIfNextCellIsFree(x, y);
+                rotateRight(x, y);
+
+                return result;
+            }
+
+            function getNextCell(x, y){
+                cellValue = arr[y][x];
+                console.log("Next cell:", x, y, cellValue)
+                var cell = new Cell();
+                switch (cellValue){
+                    case RunnerOrientation.UP:
+                        cell.X = x;
+                        cell.Y = y-1;
+                    break;
+                    case RunnerOrientation.RIGHT:
+                        cell.X = x+1;
+                        cell.Y = y;
+                    break;
+                    case RunnerOrientation.DOWN:
+                        cell.X = x;
+                        cell.Y = y+1;
+                    break;
+                    case RunnerOrientation.LEFT:
+                        cell.X = x-1;
+                        cell.Y = y;
+                    break;
+                }
+                return cell;
+            }
+
+            function redraw() {
+                paper.clear();
+                paper.rect(0, 0, 640, 480, 10).attr({fill: "#fff", stroke: "none"});
+                btn = document.getElementById("run");
+
+                for (var y=0; y<arr.length; y++){
+                    for (var x=0; x<arr[y].length; x++){
+                        var cellValue = arr[y][x]
+                        if (cellValue === 0){
+                            drawEmptyBlock(x, y);
+                        }else if (cellValue === 1){
+                            drawWall(x, y);
+                        }else if (cellValue === 2){
+                            drawExit(x, y);
+                        }else{
+                            drawEmptyBlock(x, y);
+                            drawRunner(paper, x, y, cellValue)
+                            console.log("Current position: ", x,y)
+                        }
+                    }
+                }
+            }
+
+            function drawEmptyBlock(x, y){
+                drawBlock(paper, x, y, "#666");
+            }
+            function drawWall(x, y){
+                drawBlock(paper, x, y, "#111");
+            }
+            function drawExit(x, y){
+                drawBlock(paper, x, y, "#aaa");
+            }
+
+            function drawBlock(paper, x, y, color){
+                paper.rect(x*blockSize + leftMargin ,y*blockSize + topMargin,blockSize,blockSize).animate({fill: color, stroke: "#000"}, 000);
+            }
+
+            function drawRunner(paper, x, y, direction){
+                runner = paper.rect(x*blockSize + leftMargin ,y*blockSize + topMargin,blockSize,blockSize).attr({fill: "FF9900", stroke: "none"});
+                var halfB = blockSize/2;
+                var headColor = "#223fa3";
+                switch (direction) {
+                    case 5: //up
+                        runnerHead = paper.circle(
+                            x*blockSize + leftMargin + halfB,
+                            y*blockSize + topMargin, 
+                            5).attr({fill: headColor, stroke: "#000"})
+                    break;
+                    case 6: //right
+                        runnerHead = paper.circle(
+                            x*blockSize + leftMargin + blockSize,
+                            y*blockSize + topMargin + halfB, 
+                            5).attr({fill: headColor, stroke: "#000"})
+                    break;
+                    case 7: //down
+                        runnerHead = paper.circle(
+                            x*blockSize + leftMargin + halfB,
+                            y*blockSize + topMargin + blockSize,
+                            5).attr({fill: headColor, stroke: "#000"})
+                    break;
+                    case 8: //left
+                        runnerHead = paper.circle(
+                            x*blockSize + leftMargin,
+                            y*blockSize + topMargin + halfB,
+                            5).attr({fill: headColor, stroke: "#000"})
+                    break;
+                }
+            }
+
+            function moveRunner(paper, x, y, direction){
+                var delay = 500;
+                runner.animate({
+                    x: x*blockSize + leftMargin,
+                    y: y*blockSize + topMargin
+                }, delay);
+                var halfB = blockSize/2;
+                var headColor = "#223fa3";
+                switch (direction) {
+                    case 5: //up
+                        runnerHead.animate({
+                            cx: x*blockSize + leftMargin + halfB, 
+                            cy: y*blockSize + topMargin
+                        }, delay)
+                    break;
+                    case 6: //right
+                        runnerHead.animate({
+                            cx: x*blockSize + leftMargin + blockSize,
+                            cy: y*blockSize + topMargin + halfB,
+                        }, delay)
+                    break;
+                    case 7: //down
+                        runnerHead.animate({
+                            cx: x*blockSize + leftMargin + halfB, 
+                            cy: y*blockSize + topMargin + blockSize,
+                        }, delay)
+                    break;
+                    case 8: //left
+                        runnerHead.animate({
+                            cx: x*blockSize + leftMargin, 
+                            cy: y*blockSize + topMargin + halfB
+                        }, delay)
+                    break;
+                }
+            }
+
+            function rotateRight(x, y){
+                if (arr[y][x] != 8){
+                    arr[y][x]++;
+                }else{
+                    arr[y][x] = 5;
+                }
+            }
+
+            function rotateLeft(x, y){
+                if (arr[y][x] != 5){
+                    arr[y][x]--;
+                }else{
+                    arr[y][x] = 8;
+                }
+            }
+
+            function moveForward(x, y){
+                var newCell = getNextCell(x, y);
+                arr[newCell.Y][newCell.X] = arr[y][x];
+                arr[y][x] = 0;
+                rCell.X = newCell.X;
+                rCell.Y = newCell.Y;
+            }
+ 
+            var timer = setInterval(function () {
+                if (checkIfNextCellIsFree(rCell.X, rCell.Y)){
+                    if (checkIfRightCellIsFree(rCell.X, rCell.Y)){
+                        console.log("RIGHT")
+                        rotateRight(rCell.X, rCell.Y);
+                        moveForward(rCell.X, rCell.Y)
+                    }else{
+                        console.log("GOOOO")
+                        moveForward(rCell.X, rCell.Y)
+                    }
+                }else{
+                    if (checkIfRightCellIsFree(rCell.X, rCell.Y)){
+                        console.log("RIGHT")
+                        rotateRight(rCell.X, rCell.Y);
+                        moveForward(rCell.X, rCell.Y)
+                    }else if (checkIfLeftCellIsFree(rCell.X, rCell.Y)){
+                        console.log("Left")
+                        rotateLeft(rCell.X, rCell.Y);
+                        moveForward(rCell.X, rCell.Y)
+                    }else{
+                        rotateRight(rCell.X, rCell.Y);
+                        console.log("WALL")
+                    }
+                }
+                moveRunner(paper, rCell.X, rCell.Y, arr[rCell.Y][rCell.X])
+                if (rCell.X === endCell.X && rCell.Y === endCell.Y){
+                    clearInterval(timer)
+                    paper.text(300, 440, "Finished!").attr({
+                        "font-size": 16
+                    });
+                }
+            }, 500);
+        </script>
+    </head>
+    <body>
+        <h1>Maze runner</h1>
+        <div id="canvas"></div>
+    </body>
+</html>
