@@ -3,6 +3,7 @@
         <meta charset="utf-8">
         <title>Maze runner</title>
         <script src="raphael-min.js"></script>
+        <script src="jquery-1.11.3.min.js"></script>
         <style media="screen">
             h1 {
                 font-weight: 400;
@@ -60,10 +61,10 @@
             var endCell = findEndCell(); //exit
             var paper;
 
-            window.onload = function () {
+            $(document).ready(function() {
                 paper = Raphael("canvas", 640, 480);
                 redraw()
-            }
+            });
 
             function findEndCell(){
                 return findCellByValue(2);
